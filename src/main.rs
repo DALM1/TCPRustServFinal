@@ -5,5 +5,4 @@ fn main() {
         server::main().unwrap();
     });
 
-    client::main().unwrap();
-}
+
