@@ -5,4 +5,5 @@ fn main() {
         server::main().unwrap();
     });
 
-
+    loop {}
+}
