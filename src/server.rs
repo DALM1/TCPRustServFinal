@@ -14,7 +14,7 @@ fn handle_client(mut stream: TcpStream, clients: &mut Vec<TcpStream>) {
                 let message = String::from_utf8_lossy(&buf[..n]);
                 println!("{}", message);
 
-                // Send the message to all clients
+               
                 for client in clients.iter_mut() {
                     if client.peer_addr().unwrap() != stream.peer_addr().unwrap() {
                         client.write_all(message.as_bytes()).unwrap();
