@@ -11,8 +11,6 @@ username = input("Entrez votre nom d'utilisateur: ")
 client_socket.send(username.encode())
 print("\n")
 
-
-
 def receive_messages():
     while True:
         message = client_socket.recv(1024).decode()
@@ -24,12 +22,8 @@ receive_thread.start()
 while True:
     message = input("> ")
     client_socket.send(message.encode())
-    print("\n")
-
 
     if message.lower() == "/quit":
         break
-
-# Run /quit pour quitter le chat
 
 client_socket.close()
