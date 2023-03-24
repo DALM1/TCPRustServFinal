@@ -7,12 +7,12 @@ fn listen() -> std::io::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:5000")?;
     println!("Server listening on port 5000");
 
-    let clients: Arc<Mutex<Vec<TcpStream>>> = Arc::new(Mutex::new(Vec::new()));
+    let clients: Arc<Mutex<Vec<(String, TcpStream)>>> = Arc::new(Mutex::new(Vec::new()));
 
     for stream in listener.incoming() {
         let stream = stream.expect("Failed to establish connection");
-        let clients = clients.clone();
 
+        let clients = Arc::clone(&clients);
         let mut stream_clone = stream.try_clone().expect("Failed to clone stream");
 
         thread::spawn(move || {
@@ -20,13 +20,17 @@ fn listen() -> std::io::Result<()> {
             let message = format!("{} has joined the chat", username);
             broadcast_message(&clients, &message, None);
 
-            clients.lock().unwrap().push(stream_clone);
+            clients.lock().unwrap().push((username.clone(), stream_clone));
 
             loop {
                 let message = read_message(&mut stream_clone).expect("Failed to read message");
                 let message = format!("{}: {}", username, message);
-                broadcast_message(&clients, &message, Some(&stream_clone));
+                broadcast_message(&clients, &message, Some(&username));
             }
+
+            let message = format!("{} has left the chat", username);
+            broadcast_message(&clients, &message, None);
+            clients.lock().unwrap().retain(|client| client.0 != username);
         });
     }
 
@@ -48,15 +52,15 @@ fn get_username(stream: &mut TcpStream) -> std::io::Result<String> {
     Ok(username.trim().to_string())
 }
 
-fn broadcast_message(clients: &Arc<Mutex<Vec<TcpStream>>>, message: &str, sender: Option<&TcpStream>) {
+fn broadcast_message(clients: &Arc<Mutex<Vec<(String, TcpStream)>>>, message: &str, sender: Option<&String>) {
     let clients = clients.lock().unwrap();
     for client in clients.iter() {
         if let Some(sender) = sender {
-            if *client == *sender {
+            if client.0 == *sender {
                 continue;
             }
         }
-        let mut client_clone = client.try_clone().expect("Failed to clone client");
+        let mut client_clone = client.1.try_clone().expect("Failed to clone client");
         writeln!(client_clone, "{}", message).expect("Failed to send message to client");
     }
 }
