@@ -1,5 +1,5 @@
 mod server;
-mod client;
+
 
 fn main() {
     std::thread::spawn(|| {
